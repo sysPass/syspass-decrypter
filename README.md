@@ -8,7 +8,7 @@ The purpose of this tool is for using in DR (Disaster Recovery) scenarios where 
 
 This tool requires PHP 7.2 or higher
 
-![Demo](https://i.imgur.com/sYwPOrU.gifv)
+![](https://raw.githubusercontent.com/sysPass/syspass-decrypter/assets/demo-search.gif)
 
 ### Install
 
