@@ -8,7 +8,7 @@ The purpose of this tool is for using in DR (Disaster Recovery) scenarios where 
 
 This tool requires PHP 7.2 or higher
 
-![](https://imgur.com/a/qo2j2Fl)
+![Demo](https://i.imgur.com/sYwPOrU.gifv)
 
 ### Install
 
