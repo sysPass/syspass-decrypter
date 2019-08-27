@@ -25,7 +25,6 @@
 namespace SPDecrypter\Services\XmlSearch;
 
 use DOMNodeList;
-use SPDecrypter\Services\ServiceBase;
 use SPDecrypter\Services\XmlReader\XmlParser;
 use SPDecrypter\Services\XmlReader\XmlParserError;
 
@@ -33,20 +32,39 @@ use SPDecrypter\Services\XmlReader\XmlParserError;
  * Class XmlSearch
  * @package SPDecrypter\Services\XmlSearch
  */
-final class XmlSearch extends ServiceBase
+final class XmlSearch
 {
+    /**
+     * @var XmlParser
+     */
+    private $xmlParser;
+    /**
+     * @var string
+     */
+    private $password;
 
     /**
-     * @param $name
+     * XmlSearch constructor.
      *
-     * @return DOMNodeList|false
-     * @throws XmlSearchError
-     * @throws XmlParserError
+     * @param XmlParser $xmlParser
      */
-    public function searchByName($name)
+    public function __construct(XmlParser $xmlParser)
     {
-        $nodes = $this->dic
-            ->get(XmlParser::class)
+        $this->xmlParser = $xmlParser;
+    }
+
+    /**
+     * @param                        $name
+     *
+     * @param SearchAdapterInterface $searchAdapter
+     *
+     * @return array|DOMNodeList
+     * @throws XmlParserError
+     * @throws XmlSearchError
+     */
+    public function searchByName($name, SearchAdapterInterface $searchAdapter = null)
+    {
+        $nodes = $this->xmlParser
             ->getXpath()
             ->query(sprintf('/Root/Accounts/Account[contains(name, \'%s\')]', $name));
 
@@ -54,6 +72,18 @@ final class XmlSearch extends ServiceBase
             throw new XmlSearchError('Error getting accounts');
         }
 
+        if ($searchAdapter) {
+            return $searchAdapter->getNodes($nodes, $this->password);
+        }
+
         return $nodes;
+    }
+
+    /**
+     * @param string $password
+     */
+    public function setPassword(?string $password): void
+    {
+        $this->password = $password;
     }
 }

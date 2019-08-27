@@ -26,8 +26,12 @@ namespace SPDecrypter\Commands;
 
 use League\CLImate\CLImate;
 use Psr\Container\ContainerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Style\SymfonyStyle;
 
 /**
  * Class CommandBase
@@ -43,6 +47,14 @@ abstract class CommandBase extends Command
      * @var CLImate
      */
     protected $climate;
+    /**
+     * @var LoggerInterface
+     */
+    protected $logger;
+    /**
+     * @var SymfonyStyle
+     */
+    protected $io;
 
     /**
      * Service constructor.
@@ -55,6 +67,8 @@ abstract class CommandBase extends Command
 
         $this->dic = $dic;
         $this->climate = $dic->get(CLImate::class);
+        $this->logger = $dic->get(LoggerInterface::class);
+        $this->io = new SymfonyStyle($dic->get(InputInterface::class), $dic->get(OutputInterface::class));
 
         $this->addOption('xmlpath',
             null,
@@ -73,6 +87,10 @@ abstract class CommandBase extends Command
                 null,
                 InputArgument::OPTIONAL,
                 'Use full length for every field displayed',
-                false);
+                false)
+            ->addOption('signature',
+                null,
+                InputArgument::OPTIONAL,
+                'Signature used to sing the XML file');
     }
 }

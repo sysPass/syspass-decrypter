@@ -4,9 +4,11 @@
 
 This is an standalone tool for decrypting sysPass exported XML files. It supports either encrypted or non encrypted files.
 
-The purpose of this tool is for using in DR (Disaster Recovery) scenarios where you cannot access to your sysPass instance. it would be useful to store the exported XML file and a copy of this tool within a secure location, though all the data is decrypted on-the-fly, nevertheless a secure location adds an additional layer of security, avoiding fire risks, thefts, etc.
+The purpose of this tool is for using in DR (Disaster Recovery) scenarios where you cannot access to your sysPass instance. It would be useful to store the exported XML file and a copy of this tool within a secure location, though all the data is decrypted on-the-fly, nevertheless a secure location adds an additional layer of security, avoiding fire risks, thefts, etc.
 
 This tool requires PHP 7.2 or higher
+
+![](https://raw.githubusercontent.com/sysPass/syspass-decrypter/assets/demo-search.gif)
 
 ### Install
 

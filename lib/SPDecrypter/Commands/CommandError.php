@@ -22,34 +22,11 @@
  *  along with syspass-decrypter.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-namespace SPDecrypter\Services;
+namespace SPDecrypter\Commands;
 
-use Psr\Container\ContainerInterface;
-use Psr\Log\LoggerInterface;
+use Exception;
 
-/**
- * Class ServiceBase
- * @package SPDecrypter\Services
- */
-abstract class ServiceBase
+final class CommandError extends Exception
 {
-    /**
-     * @var ContainerInterface
-     */
-    protected $dic;
-    /**
-     * @var LoggerInterface
-     */
-    protected $logger;
 
-    /**
-     * Service constructor.
-     *
-     * @param ContainerInterface $dic
-     */
-    public function __construct(ContainerInterface $dic)
-    {
-        $this->dic = $dic;
-        $this->logger = $dic->get(LoggerInterface::class);
-    }
 }

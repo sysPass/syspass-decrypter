@@ -41,7 +41,7 @@ use SPDecrypter\Util\Strings;
  * Class SearchAdapter
  * @package SPDecrypter\Services\XmlSearch
  */
-final class SearchAdapter
+final class SearchAdapter implements SearchAdapterInterface
 {
     /**
      * @var CategoriesBuilder

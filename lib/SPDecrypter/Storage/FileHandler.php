@@ -53,7 +53,7 @@ final class FileHandler
      */
     public function __construct(string $file)
     {
-        $this->file = $file;
+        $this->file = realpath($file);
     }
 
     /**
@@ -96,7 +96,7 @@ final class FileHandler
         }
 
         if ($this->handle === false) {
-            throw new FileException(sprintf(__('Unable to open the file (%s)'), $this->file));
+            throw new FileException(sprintf('Unable to open the file (%s)', $this->file));
         }
 
         return $this->handle;

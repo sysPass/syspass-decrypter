@@ -22,34 +22,26 @@
  *  along with syspass-decrypter.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-namespace SPDecrypter\Services;
+define('APP_VERSION', [0, 1, 0, 19082401]);
+define('XML_MIN_VERSION', [3, 0, 0, 0]);
+define('DS', DIRECTORY_SEPARATOR);
 
-use Psr\Container\ContainerInterface;
-use Psr\Log\LoggerInterface;
+require APP_BASE_DIR . DS . 'vendor' . DS . 'autoload.php';
 
-/**
- * Class ServiceBase
- * @package SPDecrypter\Services
- */
-abstract class ServiceBase
-{
-    /**
-     * @var ContainerInterface
-     */
-    protected $dic;
-    /**
-     * @var LoggerInterface
-     */
-    protected $logger;
+use DI\ContainerBuilder;
+use SPDecrypter\Commands\SearchAccountCommand;
+use Symfony\Component\Console\Application;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
 
-    /**
-     * Service constructor.
-     *
-     * @param ContainerInterface $dic
-     */
-    public function __construct(ContainerInterface $dic)
-    {
-        $this->dic = $dic;
-        $this->logger = $dic->get(LoggerInterface::class);
-    }
+try {
+    $builder = new ContainerBuilder();
+    $builder->addDefinitions(__DIR__ . DS . 'definitions.php');
+    $dic = $builder->build();
+
+    $app = new Application();
+    $app->add(new SearchAccountCommand($dic));
+    $app->run($dic->get(InputInterface::class), $dic->get(OutputInterface::class));
+} catch (Exception $e) {
+    echo $e->getMessage();
 }

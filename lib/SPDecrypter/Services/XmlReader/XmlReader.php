@@ -43,11 +43,6 @@ final class XmlReader extends ServiceBase
     private $fileHandler;
 
     /**
-     * @var array
-     */
-    private $errors = [];
-
-    /**
      * FileImport constructor.
      *
      * @param FileHandler $fileHandler
@@ -58,6 +53,8 @@ final class XmlReader extends ServiceBase
      */
     public function read(FileHandler $fileHandler): DOMDocument
     {
+        $this->logger->info(sprintf('Reading XML file "%s"', $fileHandler->getFile()));
+
         $this->fileHandler = $fileHandler;
 
         $this->checkFile();
@@ -74,6 +71,8 @@ final class XmlReader extends ServiceBase
      */
     private function checkFile()
     {
+        $this->logger->info(__FUNCTION__);
+
         $this->fileHandler->checkFileExists();
 
         if (!in_array($this->fileHandler->getFileType(), self::ALLOWED_MIME)) {
@@ -89,6 +88,8 @@ final class XmlReader extends ServiceBase
      */
     private function readXMLFile()
     {
+        $this->logger->info(__FUNCTION__);
+
         libxml_use_internal_errors(true);
 
         $this->document = new DOMDocument();
@@ -97,7 +98,7 @@ final class XmlReader extends ServiceBase
 
         if ($this->document->loadXML($this->readFileToString()) === false) {
             foreach (libxml_get_errors() as $error) {
-                $this->errors[] = $error->message;
+                $this->logger->error($error->message);
             }
 
             throw new XmlReaderError('Unable to process the XML file');
@@ -111,6 +112,8 @@ final class XmlReader extends ServiceBase
      */
     private function readFileToString(): string
     {
+        $this->logger->info(__FUNCTION__);
+
         $this->autodetectEOL();
 
         return $this->fileHandler->readToString();
@@ -121,6 +124,8 @@ final class XmlReader extends ServiceBase
      */
     private function autodetectEOL()
     {
+        $this->logger->info(__FUNCTION__);
+
         ini_set('auto_detect_line_endings', true);
     }
 }

@@ -24,21 +24,4 @@
 
 define('APP_BASE_DIR', __DIR__);
 
-require APP_BASE_DIR . '/vendor/autoload.php';
-
-use DI\ContainerBuilder;
-use SPDecrypter\Commands\SearchAccountCommand;
-use Symfony\Component\Console\Application;
-
-try {
-    $builder = new ContainerBuilder();
-    $builder->addDefinitions(APP_BASE_DIR . '/lib/SPDecrypter/definitions.php');
-    $dic = $builder->build();
-
-    $app = new Application();
-    $app->add(new SearchAccountCommand($dic));
-    $app->run();
-} catch (Exception $e) {
-    echo $e->getMessage();
-}
-
+require APP_BASE_DIR . '/lib/SPDecrypter/bootstrap.php';

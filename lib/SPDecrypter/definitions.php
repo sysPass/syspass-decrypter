@@ -23,23 +23,45 @@
  */
 
 use League\CLImate\CLImate;
+use Psr\Container\ContainerInterface;
+use Psr\Log\LoggerInterface;
+use Psr\Log\LogLevel;
 use SPDecrypter\Services\Categories\CategoriesBuilder;
 use SPDecrypter\Services\Client\ClientBuilder;
 use SPDecrypter\Services\Tags\TagsBuilder;
+use SPDecrypter\Services\XmlReader\XmlChecker;
 use SPDecrypter\Services\XmlReader\XmlParser;
 use SPDecrypter\Services\XmlReader\XmlReader;
 use SPDecrypter\Services\XmlSearch\SearchAdapter;
 use SPDecrypter\Services\XmlSearch\XmlSearch;
+use Symfony\Component\Console\Input\ArgvInput;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Logger\ConsoleLogger;
+use Symfony\Component\Console\Output\ConsoleOutput;
+use Symfony\Component\Console\Output\OutputInterface;
 use function DI\autowire;
 use function DI\create;
+use function DI\factory;
 
 return [
     CLImate::class => create(),
     XmlReader::class => autowire(),
     XmlParser::class => autowire(),
     XmlSearch::class => autowire(),
+    XmlChecker::class => autowire(),
     ClientBuilder::class => autowire(),
     CategoriesBuilder::class => autowire(),
     TagsBuilder::class => autowire(),
-    SearchAdapter::class => autowire()
+    SearchAdapter::class => autowire(),
+    OutputInterface::class => create(ConsoleOutput::class)
+        ->constructor(ConsoleOutput::VERBOSITY_NORMAL, true),
+    InputInterface::class => create(ArgvInput::class),
+    LoggerInterface::class => factory(function (ContainerInterface $c) {
+        $verbosityLevelMap = [
+            LogLevel::NOTICE => OutputInterface::VERBOSITY_NORMAL,
+            LogLevel::INFO => OutputInterface::VERBOSITY_NORMAL,
+        ];
+
+        return new ConsoleLogger($c->get(OutputInterface::class), $verbosityLevelMap);
+    }),
 ];

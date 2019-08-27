@@ -32,7 +32,6 @@ use SPDecrypter\Services\ServiceBase;
 use SPDecrypter\Storage\FileException;
 use SPDecrypter\Storage\FileHandler;
 use SPDecrypter\Util\Crypt;
-use SPDecrypter\Util\Hash;
 
 /**
  * Class XmlParser
@@ -72,24 +71,46 @@ final class XmlParser extends ServiceBase
      * @param XmlReader   $reader
      * @param string|null $password
      *
+     * @param string|null $signature
+     *
      * @throws FileException
+     * @throws XmlCheckerError
      * @throws XmlParserError
      * @throws XmlReaderError
      */
-    public function initialize(string $file, XmlReader $reader, string $password = null)
+    public function initialize(string $file, XmlReader $reader,
+                               string $password = null,
+                               string $signature = null)
     {
         if ($this->initialized) {
             throw new XmlParserError('XML parser already initialized');
         }
 
+        $this->logger->info(__FUNCTION__);
+
         $this->document = $reader->read(new FileHandler($file));
 
+        XmlChecker::checkBaseNodes($this->document);
+
+        if ($signature) {
+            $this->logger->info('Checking XML signature');
+
+            XmlChecker::checkSignature($this->document, $signature);
+        }
+
         if ($this->detectEncrypted()) {
+            $this->logger->info('Encrypted XML detected');
+
             if (!$password) {
                 throw new XmlParserError('Encryption password not set');
             }
+
+            XmlChecker::checkEncryptedNodes($this->document);
+
             $this->processEncrypted($password);
         }
+
+        XmlChecker::checkUnencryptedNodes($this->document);
 
         $this->xpath = new DOMXPath($this->document);
 
@@ -112,48 +133,53 @@ final class XmlParser extends ServiceBase
      * @param string $password
      *
      * @throws XmlParserError
+     * @throws XmlCheckerError
      */
     private function processEncrypted(string $password)
     {
-        $hash = $this->document->getElementsByTagName('Encrypted')->item(0)->getAttribute('hash');
+        XmlChecker::checkEncryptionHash($this->document, $password);
 
-        if (!empty($hash) && !Hash::checkHashKey($password, $hash)) {
-            throw new XmlParserError('Wrong encryption password');
-        }
+        $this->logger->info('Processing encrypted data');
 
-        foreach ($this->document->getElementsByTagName('Data') as $node) {
+        $dataNodes = $this->document->getElementsByTagName('Data');
+
+        foreach ($dataNodes as $node) {
             /** @var $node DOMElement */
             $data = base64_decode($node->nodeValue);
 
             try {
                 $xmlDecrypted = Crypt::decrypt($data, $node->getAttribute('key'), $password);
             } catch (CryptoException $e) {
-                continue;
+                throw new XmlParserError('Error decrypting XML data');
             }
 
             $newXmlData = new DOMDocument();
 
             if ($newXmlData->loadXML($xmlDecrypted) === false) {
-                throw new XmlParserError('Wrong encryption password');
+                throw new XmlParserError('Error loading XML data');
             }
 
-            $this->document->documentElement->appendChild($this->document->importNode($newXmlData->documentElement, TRUE));
+            $this->document->documentElement->appendChild($this->document->importNode($newXmlData->documentElement, true));
         }
 
-        // Remove the encrypted data before processing
-        if ($this->document->getElementsByTagName('Data')->length > 0) {
-            $nodeData = $this->document->getElementsByTagName('Encrypted')->item(0);
-            $nodeData->parentNode->removeChild($nodeData);
-        }
+        // Remove the encrypted data after processing
+        $this->document->documentElement->removeChild($dataNodes->item(0)->parentNode);
     }
 
     /**
      * Return the XML version
+     *
      * @throws XmlParserError
      */
-    public function getXmlVersion()
+    public function getXmlVersion(): string
     {
-        return $this->getXpath()->query('/Root/Meta/Version')->item(0)->nodeValue;
+        $version = $this->getXpath()->query('/Root/Meta/Version');
+
+        if (empty($version)) {
+            throw new XmlParserError('Version node not found');
+        }
+
+        return $version->item(0)->nodeValue;
     }
 
     /**
@@ -171,10 +197,17 @@ final class XmlParser extends ServiceBase
 
     /**
      * Return the XML date
+     *
      * @throws XmlParserError
      */
-    public function getXmlDate()
+    public function getXmlDate(): int
     {
-        return $this->getXpath()->query('/Root/Meta/Time')->item(0)->nodeValue;
+        $date = $this->getXpath()->query('/Root/Meta/Time');
+
+        if (empty($date)) {
+            throw new XmlParserError('Date node not found');
+        }
+
+        return (int)$date->item(0)->nodeValue;
     }
 }

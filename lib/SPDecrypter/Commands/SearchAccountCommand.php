@@ -33,7 +33,6 @@ use SPDecrypter\Services\XmlSearch\XmlSearch;
 use SPDecrypter\Util\Strings;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
@@ -65,25 +64,26 @@ final class SearchAccountCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $logger = new ConsoleLogger($output);
-
         try {
             $password = $input->getOption('password');
 
             if (!$password) {
-                $ask = $this->climate->input('XML password: ');
-                $password = $ask->prompt();
+                $password = $this->io->ask('XML password:');
             }
 
             $masterPassword = $input->getOption('masterPassword');
 
             if (!$masterPassword) {
-                $ask = $this->climate->input('Master password: ');
-                $masterPassword = $ask->prompt();
+                $masterPassword = $this->io->ask('Master password:');
             }
 
             $parser = $this->dic->get(XmlParser::class);
-            $parser->initialize($input->getOption('xmlpath'), $this->dic->get(XmlReader::class), $password);
+            $parser->initialize(
+                $input->getOption('xmlpath'),
+                $this->dic->get(XmlReader::class),
+                $password,
+                $input->getOption('signature')
+            );
 
             $adapter = $this->dic->get(SearchAdapter::class);
             $adapter->setWithCategories(Strings::boolval($input->getOption('withCategories')));
@@ -91,28 +91,39 @@ final class SearchAccountCommand extends CommandBase
             $adapter->setTruncate(!Strings::boolval($input->getOption('wide')));
 
             $search = $this->dic->get(XmlSearch::class);
-            $accounts = $adapter->getNodes($search->searchByName($input->getArgument('name')),
-                $masterPassword);
+            $search->setPassword($masterPassword);
+
+            $accounts = $search->searchByName($input->getArgument('name'), $adapter);
 
             $xmlDate = DateTime::createFromFormat('U', $parser->getXmlDate());
 
             $output->writeln([
+                '====',
                 sprintf('<info>XML file sysPass version: %s</info>', $parser->getXmlVersion()),
                 sprintf('<info>XML file date: %s</info>', $xmlDate->format('c')),
-                '',
-                sprintf('<info>Using "%s" file for reading accounts data</info>', $input->getOption('xmlpath')),
-                sprintf('<info>List of Accounts for name: "%s"</info>', $input->getArgument('name')),
+                '====',
                 sprintf('<info>Include categories: %s</info>', $adapter->isWithCategories() ? 'yes' : 'no'),
                 sprintf('<info>Include tags: %s</info>', $adapter->isWithTags() ? 'yes' : 'no'),
                 sprintf('<info>Wide output: %s</info>', $adapter->isTruncate() ? 'no' : 'yes'),
-                sprintf('Total items: %d', count($accounts)),
-                '',
+                '====',
             ]);
 
+            $this->io->title(sprintf('List of Accounts for name: "%s"', $input->getArgument('name')));
+
             $this->climate->table($accounts);
+
+            $this->io->success(sprintf('Total items: %d', count($accounts)));
+
+            if (empty($masterPassword)) {
+                $this->io->note('Passwords not decrypted because master password wasn\'t set');
+            }
+
+            if ($adapter->isTruncate()) {
+                $this->io->note('Truncated output for text fields');
+            }
         } catch (Exception $e) {
-            $logger->error($e->getTraceAsString());
-            $logger->error($e->getMessage());
+            $this->logger->error($e->getTraceAsString());
+            $this->logger->error($e->getMessage());
         }
     }
 }
