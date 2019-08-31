@@ -26,14 +26,12 @@ namespace SPDecrypter\Services\XmlSearch;
 
 use Defuse\Crypto\Exception\CryptoException;
 use DOMElement;
-use DOMNode;
 use DOMNodeList;
-use SPDecrypter\Services\Categories\CategoriesBuilder;
-use SPDecrypter\Services\Categories\CategoriesBuilderError;
-use SPDecrypter\Services\Client\ClientBuilder;
-use SPDecrypter\Services\Client\ClientBuilderError;
-use SPDecrypter\Services\Tags\TagsBuilder;
-use SPDecrypter\Services\Tags\TagsBuilderError;
+use SPDecrypter\Services\XmlNode\NodeAdapter;
+use SPDecrypter\Services\XmlNode\QueryNode;
+use SPDecrypter\Services\XmlNode\QueryNodeError;
+use SPDecrypter\Services\XmlReader\XmlParser;
+use SPDecrypter\Services\XmlReader\XmlParserError;
 use SPDecrypter\Util\Crypt;
 use SPDecrypter\Util\Strings;
 
@@ -44,17 +42,9 @@ use SPDecrypter\Util\Strings;
 final class SearchAdapter implements SearchAdapterInterface
 {
     /**
-     * @var CategoriesBuilder
+     * @var XmlParser
      */
-    private $categoriesBuilder;
-    /**
-     * @var ClientBuilder
-     */
-    private $clientBuilder;
-    /**
-     * @var TagsBuilder
-     */
-    private $tagsBuilder;
+    private $xmlParser;
     /**
      * @var bool
      */
@@ -71,17 +61,11 @@ final class SearchAdapter implements SearchAdapterInterface
     /**
      * SearchAdapter constructor.
      *
-     * @param CategoriesBuilder $categoriesBuilder
-     * @param ClientBuilder     $clientBuilder
-     * @param TagsBuilder       $tagsBuilder
+     * @param XmlParser $xmlParser
      */
-    public function __construct(CategoriesBuilder $categoriesBuilder,
-                                ClientBuilder $clientBuilder,
-                                TagsBuilder $tagsBuilder)
+    public function __construct(XmlParser $xmlParser)
     {
-        $this->categoriesBuilder = $categoriesBuilder;
-        $this->clientBuilder = $clientBuilder;
-        $this->tagsBuilder = $tagsBuilder;
+        $this->xmlParser = $xmlParser;
     }
 
     /**
@@ -91,80 +75,85 @@ final class SearchAdapter implements SearchAdapterInterface
      *
      * @return array
      * @throws CryptoException
-     * @throws CategoriesBuilderError
-     * @throws ClientBuilderError
-     * @throws TagsBuilderError
+     * @throws QueryNodeError
+     * @throws XmlParserError
      */
     public function getNodes(DOMNodeList $nodeList, string $password = null): array
     {
-        $clients = ClientBuilder::mapper($this->clientBuilder->getClients());
+        $xpath = $this->xmlParser->getXpath();
+
+        $clients = NodeAdapter::arrayAdapter(
+            QueryNode::getNodes(QueryNode::QUERY_CLIENTS, $xpath)
+        );
 
         if ($this->withCategories) {
-            $categories = CategoriesBuilder::mapper($this->categoriesBuilder->getCategories());
+            $categories = NodeAdapter::arrayAdapter(
+                QueryNode::getNodes(QueryNode::QUERY_CATEGORIES, $xpath)
+            );
         }
 
         if ($this->withTags) {
-            $tags = TagsBuilder::mapper($this->tagsBuilder->getTags());
+            $tags = NodeAdapter::arrayAdapter(
+                QueryNode::getNodes(QueryNode::QUERY_TAGS, $xpath)
+            );
         }
 
         $nodes = [];
 
-        if ($nodeList->length === 0) {
-            return $nodes;
-        }
+        if ($nodeList->length > 0) {
+            /** @var DOMElement $node */
+            foreach ($nodeList as $node) {
+                $account = [];
 
-        /** @var DOMNode $node */
-        foreach ($nodeList as $node) {
-            $account = [];
-
-            /** @var DOMElement $accountNode */
-            foreach ($node->childNodes as $accountNode) {
-                switch ($accountNode->tagName) {
-                    case 'name':
-                        $account['name'] = $this->getValueString($accountNode->nodeValue);
-                        break;
-                    case 'login':
-                        $account['login'] = $this->getValueString($accountNode->nodeValue);
-                        break;
-                    case 'url':
-                        $account['url'] = $this->getValueString($accountNode->nodeValue);
-                        break;
-                    case 'notes':
-                        $account['notes'] = $this->getValueString($accountNode->nodeValue);
-                        break;
-                    case 'clientId':
-                        $account['client'] = $this->getValueString($clients[(int)$accountNode->nodeValue]);
-                        break;
-                    case 'categoryId':
-                        if ($this->withCategories) {
-                            $account['category'] = $this->getValueString($categories[(int)$accountNode->nodeValue]);
-                        }
-                        break;
-                    case 'tags':
-                        if ($this->withTags && $accountNode->childNodes->length > 0) {
-                            $accountTags = [];
-
-                            /** @var DOMElement $tagNode */
-                            foreach ($accountNode->childNodes as $tagNode) {
-                                $accountTags[] = $tags[(int)$tagNode->getAttribute('id')];
+                /** @var DOMElement $accountNode */
+                foreach ($node->childNodes as $accountNode) {
+                    switch ($accountNode->tagName) {
+                        case 'name':
+                            $account['name'] = $this->getValueString($accountNode->nodeValue);
+                            break;
+                        case 'login':
+                            $account['login'] = $this->getValueString($accountNode->nodeValue);
+                            break;
+                        case 'url':
+                            $account['url'] = $this->getValueString($accountNode->nodeValue);
+                            break;
+                        case 'notes':
+                            $account['notes'] = $this->getValueString($accountNode->nodeValue);
+                            break;
+                        case 'clientId':
+                            $account['client'] = $this->getValueString($clients[(int)$accountNode->nodeValue]);
+                            break;
+                        case 'categoryId':
+                            if ($this->withCategories) {
+                                $account['category'] = $this->getValueString($categories[(int)$accountNode->nodeValue]);
                             }
+                            break;
+                        case 'tags':
+                            if ($this->withTags && $accountNode->childNodes->length > 0) {
+                                $accountTags = [];
 
-                            $account['tags'] = $this->getValueString(implode(',', $accountTags));
-                        }
-                        break;
-                    case 'pass';
-                        if ($password) {
-                            $account['password'] = Crypt::decrypt($accountNode->nodeValue,
-                                $node->getElementsByTagName('key')->item(0)->nodeValue,
-                                $password);
-                        } else {
-                            $account['password'] = '**encrypted**';
-                        }
-                        break;
+                                /** @var DOMElement $tagNode */
+                                foreach ($accountNode->childNodes as $tagNode) {
+                                    $accountTags[] = $tags[(int)$tagNode->getAttribute('id')];
+                                }
+
+                                $account['tags'] = $this->getValueString(implode(',', $accountTags));
+                            }
+                            break;
+                        case 'pass';
+                            if ($password) {
+                                $account['password'] = Crypt::decrypt($accountNode->nodeValue,
+                                    $node->getElementsByTagName('key')->item(0)->nodeValue,
+                                    $password);
+                            } else {
+                                $account['password'] = '**encrypted**';
+                            }
+                            break;
+                    }
                 }
-            }
 
-            $nodes[] = $account;
+                $nodes[] = $account;
+            }
         }
 
         return $nodes;

@@ -68,13 +68,13 @@ final class SearchAccountCommand extends CommandBase
             $password = $input->getOption('password');
 
             if (!$password) {
-                $password = $this->io->ask('XML password:');
+                $password = $this->io->ask('XML password');
             }
 
             $masterPassword = $input->getOption('masterPassword');
 
             if (!$masterPassword) {
-                $masterPassword = $this->io->ask('Master password:');
+                $masterPassword = $this->io->ask('Master password');
             }
 
             $parser = $this->dic->get(XmlParser::class);

@@ -26,9 +26,6 @@ use League\CLImate\CLImate;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
-use SPDecrypter\Services\Categories\CategoriesBuilder;
-use SPDecrypter\Services\Client\ClientBuilder;
-use SPDecrypter\Services\Tags\TagsBuilder;
 use SPDecrypter\Services\XmlReader\XmlChecker;
 use SPDecrypter\Services\XmlReader\XmlParser;
 use SPDecrypter\Services\XmlReader\XmlReader;
@@ -49,9 +46,6 @@ return [
     XmlParser::class => autowire(),
     XmlSearch::class => autowire(),
     XmlChecker::class => autowire(),
-    ClientBuilder::class => autowire(),
-    CategoriesBuilder::class => autowire(),
-    TagsBuilder::class => autowire(),
     SearchAdapter::class => autowire(),
     OutputInterface::class => create(ConsoleOutput::class)
         ->constructor(ConsoleOutput::VERBOSITY_NORMAL, true),

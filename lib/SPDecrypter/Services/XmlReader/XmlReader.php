@@ -29,6 +29,10 @@ use SPDecrypter\Services\ServiceBase;
 use SPDecrypter\Storage\FileException;
 use SPDecrypter\Storage\FileHandler;
 
+/**
+ * Class XmlReader
+ * @package SPDecrypter\Services\XmlReader
+ */
 final class XmlReader extends ServiceBase
 {
     const ALLOWED_MIME = ['application/xml', 'text/xml'];
@@ -43,7 +47,7 @@ final class XmlReader extends ServiceBase
     private $fileHandler;
 
     /**
-     * FileImport constructor.
+     * XmlReader constructor.
      *
      * @param FileHandler $fileHandler
      *
@@ -106,7 +110,7 @@ final class XmlReader extends ServiceBase
     }
 
     /**
-     * Leer los datos de un archivo subido a una cadena
+     * Read the file data to a string
      *
      * @throws FileException
      */
@@ -120,7 +124,7 @@ final class XmlReader extends ServiceBase
     }
 
     /**
-     * Activar la autodetección de fin de línea
+     * Enable End Of Line detection
      */
     private function autodetectEOL()
     {

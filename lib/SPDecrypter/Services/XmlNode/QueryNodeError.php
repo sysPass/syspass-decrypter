@@ -3,12 +3,12 @@
  * syspass-decrypter
  *
  * @author    nuxsmin
- * @link      https://syspass.org
- * @copyright 2019-2019, Rubén Domínguez nuxsmin@$syspass.org
+ * @link      http://syspass.org
+ * @copyright 2012-2019 Rubén Domínguez nuxsmin@$syspass.org
  *
  * This file is part of syspass-decrypter.
  *
- * syspass-decrypter is free software: you can redistribute it and/or modify
+ * sysPass is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -19,18 +19,15 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- *  along with syspass-decrypter.  If not, see <http://www.gnu.org/licenses/>.
+ * along with sysPass.  If not, see <http://www.gnu.org/licenses/>.
+ *
  */
 
-namespace SPDecrypter\Services\Client;
+namespace SPDecrypter\Services\XmlNode;
 
 use Exception;
 
-/**
- * Class ClientBuilderError
- * @package SPDecrypter\Services\Client
- */
-final class ClientBuilderError extends Exception
+final class QueryNodeError extends Exception
 {
 
 }
