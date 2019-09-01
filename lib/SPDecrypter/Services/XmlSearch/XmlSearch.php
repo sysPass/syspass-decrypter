@@ -25,6 +25,8 @@
 namespace SPDecrypter\Services\XmlSearch;
 
 use DOMNodeList;
+use SPDecrypter\Services\XmlReader\XmlChecker;
+use SPDecrypter\Services\XmlReader\XmlCheckerError;
 use SPDecrypter\Services\XmlReader\XmlParser;
 use SPDecrypter\Services\XmlReader\XmlParserError;
 
@@ -61,12 +63,42 @@ final class XmlSearch
      * @return array|DOMNodeList
      * @throws XmlParserError
      * @throws XmlSearchError
+     * @throws XmlCheckerError
      */
     public function searchByName($name, SearchAdapterInterface $searchAdapter = null)
     {
+        XmlChecker::checkVersion($this->xmlParser->getXmlVersion());
+
         $nodes = $this->xmlParser
             ->getXpath()
             ->query(sprintf('/Root/Accounts/Account[contains(name, \'%s\')]', $name));
+
+        if ($nodes === false) {
+            throw new XmlSearchError('Error getting accounts');
+        }
+
+        if ($searchAdapter) {
+            return $searchAdapter->getNodes($nodes, $this->password);
+        }
+
+        return $nodes;
+    }
+
+    /**
+     * @param SearchAdapterInterface $searchAdapter
+     *
+     * @return array|DOMNodeList
+     * @throws XmlParserError
+     * @throws XmlSearchError
+     * @throws XmlCheckerError
+     */
+    public function searchAll(SearchAdapterInterface $searchAdapter = null)
+    {
+        XmlChecker::checkVersion($this->xmlParser->getXmlVersion());
+
+        $nodes = $this->xmlParser
+            ->getXpath()
+            ->query('/Root/Accounts/Account');
 
         if ($nodes === false) {
             throw new XmlSearchError('Error getting accounts');

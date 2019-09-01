@@ -14,7 +14,7 @@ This tool requires PHP 7.2 or higher
 
 #### Using PHAR (recommended)
 
-You can simply download a pre-compiled and ready-to-use version as a Phar to any directory. Simply download the latest `syspass-decrypter.phar` file from our releases page:
+You can simply download a pre-compiled and ready-to-use version as a Phar to any directory. Download the latest `syspass-decrypter.phar` file from our releases page:
 
 [Latest release](https://github.com/syspass/syspass-decrypter/releases/latest)
 
@@ -26,9 +26,7 @@ $ php syspass-decrypter.phar --version
 
 #### Using Composer
 
-* Download
-* Check signature
-* Install dependencies
+**TODO**
 
 ### Usage
 

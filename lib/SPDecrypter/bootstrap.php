@@ -25,6 +25,7 @@
 define('APP_VERSION', [0, 1, 0, 19082401]);
 define('XML_MIN_VERSION', [3, 0, 0, 0]);
 define('DS', DIRECTORY_SEPARATOR);
+define('XML_SCHEMA', APP_BASE_DIR . DS . 'schemas' . DS . 'syspass.xsd');
 
 require APP_BASE_DIR . DS . 'vendor' . DS . 'autoload.php';
 
@@ -40,7 +41,7 @@ try {
     $dic = $builder->build();
 
     $app = new Application();
-    $app->add(new SearchAccountCommand($dic));
+    $app->add($dic->get(SearchAccountCommand::class));
     $app->run($dic->get(InputInterface::class), $dic->get(OutputInterface::class));
 } catch (Exception $e) {
     echo $e->getMessage();

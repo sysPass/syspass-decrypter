@@ -37,65 +37,15 @@ use SPDecrypter\Util\Version;
  */
 final class XmlChecker
 {
-    const XML_BASE_NODES = ['Meta'];
-    const XML_UNENCRYPTED_NODES = ['Categories', 'Clients', 'Tags', 'Accounts'];
-    const XML_ENCRYPTED_NODES = ['Encrypted', 'Data'];
-
-    /**
-     * @var XmlParser
-     */
-    private $xmlParser;
-
-    /**
-     * XmlSearch constructor.
-     *
-     * @param XmlParser $xmlParser
-     */
-    public function __construct(XmlParser $xmlParser)
-    {
-        $this->xmlParser = $xmlParser;
-    }
-
     /**
      * @param DOMDocument $document
      *
      * @throws XmlCheckerError
      */
-    public static function checkBaseNodes(DOMDocument $document)
+    public static function validateSchema(DOMDocument $document)
     {
-        foreach (self::XML_BASE_NODES as $node) {
-            if ($document->getElementsByTagName($node)->length === 0) {
-                throw new XmlCheckerError(sprintf('XML node "%s" not found', $node));
-            }
-        }
-    }
-
-
-    /**
-     * @param DOMDocument $document
-     *
-     * @throws XmlCheckerError
-     */
-    public static function checkUnencryptedNodes(DOMDocument $document)
-    {
-        foreach (self::XML_UNENCRYPTED_NODES as $node) {
-            if ($document->getElementsByTagName($node)->length === 0) {
-                throw new XmlCheckerError(sprintf('XML node "%s" not found', $node));
-            }
-        }
-    }
-
-    /**
-     * @param DOMDocument $document
-     *
-     * @throws XmlCheckerError
-     */
-    public static function checkEncryptedNodes(DOMDocument $document)
-    {
-        foreach (self::XML_ENCRYPTED_NODES as $node) {
-            if ($document->getElementsByTagName($node)->length === 0) {
-                throw new XmlCheckerError(sprintf('XML node "%s" not found', $node));
-            }
+        if (!$document->schemaValidate(XML_SCHEMA)) {
+            throw new XmlCheckerError('Invalid XML schema');
         }
     }
 
@@ -140,13 +90,14 @@ final class XmlChecker
     }
 
     /**
+     * @param string $version
+     *
      * @return void
      * @throws XmlCheckerError
-     * @throws XmlParserError
      */
-    public function checkVersion()
+    public static function checkVersion(string $version)
     {
-        if (Version::checkVersion($this->xmlParser->getXmlVersion(), XML_MIN_VERSION)) {
+        if (Version::checkVersion($version, XML_MIN_VERSION)) {
             throw new XmlCheckerError(sprintf('Sorry, this XML version is not compatible. Please use >= %s',
                     Version::normalizeVersionForCompare(XML_MIN_VERSION))
             );

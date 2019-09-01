@@ -47,12 +47,6 @@ final class QueryNode
      */
     public static function getNodes(string $node, DOMXPath $DOMXPath): DOMNodeList
     {
-        $check = $DOMXPath->evaluate($node);
-
-        if ($check === false) {
-            throw new QueryNodeError('Wrong node');
-        }
-
         $nodes = $DOMXPath->query($node);
 
         if ($nodes === false) {

@@ -41,10 +41,6 @@ final class Version
      */
     public static function checkVersion($first, $second)
     {
-        if (is_array($second)) {
-            $second = array_pop($second);
-        }
-
         $first = self::normalizeVersionForCompare($first);
         $second = self::normalizeVersionForCompare($second);
 
@@ -78,7 +74,7 @@ final class Version
             if (is_string($versionIn)) {
                 list($version, $build) = explode('.', $versionIn);
             } elseif (is_array($versionIn) && count($versionIn) === 4) {
-                $version = implode(array_slice($versionIn, 0, 3));
+                $version = implode('', array_slice($versionIn, 0, 3));
                 $build = $versionIn[3];
             } else {
                 return '';

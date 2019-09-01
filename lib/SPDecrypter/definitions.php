@@ -26,7 +26,7 @@ use League\CLImate\CLImate;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
-use SPDecrypter\Services\XmlReader\XmlChecker;
+use SPDecrypter\Commands\SearchAccountCommand;
 use SPDecrypter\Services\XmlReader\XmlParser;
 use SPDecrypter\Services\XmlReader\XmlReader;
 use SPDecrypter\Services\XmlSearch\SearchAdapter;
@@ -36,6 +36,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Style\SymfonyStyle;
 use function DI\autowire;
 use function DI\create;
 use function DI\factory;
@@ -45,7 +46,6 @@ return [
     XmlReader::class => autowire(),
     XmlParser::class => autowire(),
     XmlSearch::class => autowire(),
-    XmlChecker::class => autowire(),
     SearchAdapter::class => autowire(),
     OutputInterface::class => create(ConsoleOutput::class)
         ->constructor(ConsoleOutput::VERBOSITY_NORMAL, true),
@@ -58,4 +58,8 @@ return [
 
         return new ConsoleLogger($c->get(OutputInterface::class), $verbosityLevelMap);
     }),
+    SymfonyStyle::class => factory(function (ContainerInterface $c) {
+        return new SymfonyStyle($c->get(InputInterface::class), $c->get(OutputInterface::class));
+    }),
+    SearchAccountCommand::class => autowire(),
 ];

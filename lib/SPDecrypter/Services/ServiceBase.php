@@ -24,7 +24,6 @@
 
 namespace SPDecrypter\Services;
 
-use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -34,10 +33,6 @@ use Psr\Log\LoggerInterface;
 abstract class ServiceBase
 {
     /**
-     * @var ContainerInterface
-     */
-    protected $dic;
-    /**
      * @var LoggerInterface
      */
     protected $logger;
@@ -45,11 +40,10 @@ abstract class ServiceBase
     /**
      * Service constructor.
      *
-     * @param ContainerInterface $dic
+     * @param LoggerInterface $logger
      */
-    public function __construct(ContainerInterface $dic)
+    public function __construct(LoggerInterface $logger)
     {
-        $this->dic = $dic;
-        $this->logger = $dic->get(LoggerInterface::class);
+        $this->logger = $logger;
     }
 }

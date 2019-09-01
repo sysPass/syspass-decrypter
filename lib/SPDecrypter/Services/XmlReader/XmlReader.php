@@ -87,7 +87,6 @@ final class XmlReader extends ServiceBase
     /**
      * Read the file to an XML object
      *
-     * @throws FileException
      * @throws XmlReaderError
      */
     private function readXMLFile()
@@ -100,36 +99,12 @@ final class XmlReader extends ServiceBase
         $this->document->formatOutput = false;
         $this->document->preserveWhiteSpace = false;
 
-        if ($this->document->loadXML($this->readFileToString()) === false) {
+        if ($this->document->load($this->fileHandler->getFile(), LIBXML_PARSEHUGE) === false) {
             foreach (libxml_get_errors() as $error) {
                 $this->logger->error($error->message);
             }
 
             throw new XmlReaderError('Unable to process the XML file');
         }
-    }
-
-    /**
-     * Read the file data to a string
-     *
-     * @throws FileException
-     */
-    private function readFileToString(): string
-    {
-        $this->logger->info(__FUNCTION__);
-
-        $this->autodetectEOL();
-
-        return $this->fileHandler->readToString();
-    }
-
-    /**
-     * Enable End Of Line detection
-     */
-    private function autodetectEOL()
-    {
-        $this->logger->info(__FUNCTION__);
-
-        ini_set('auto_detect_line_endings', true);
     }
 }

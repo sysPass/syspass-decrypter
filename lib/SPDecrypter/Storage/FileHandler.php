@@ -53,7 +53,7 @@ final class FileHandler
      */
     public function __construct(string $file)
     {
-        $this->file = realpath($file);
+        $this->file = $file;
     }
 
     /**
@@ -260,7 +260,7 @@ final class FileHandler
      */
     public function getFileSize($isExceptionOnZero = false): int
     {
-        $size = filesize($this->file);
+        $size = @filesize($this->file);
 
         if ($size === false || ($isExceptionOnZero === true && $size === 0)) {
             throw new FileException(sprintf('Unable to read/write file (%s)', $this->file));

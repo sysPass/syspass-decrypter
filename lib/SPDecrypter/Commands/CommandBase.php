@@ -25,12 +25,9 @@
 namespace SPDecrypter\Commands;
 
 use League\CLImate\CLImate;
-use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
-use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 /**
@@ -39,10 +36,6 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  */
 abstract class CommandBase extends Command
 {
-    /**
-     * @var ContainerInterface
-     */
-    protected $dic;
     /**
      * @var CLImate
      */
@@ -59,16 +52,17 @@ abstract class CommandBase extends Command
     /**
      * Service constructor.
      *
-     * @param ContainerInterface $dic
+     * @param CLImate         $climate
+     * @param LoggerInterface $logger
+     * @param SymfonyStyle    $io
      */
-    public function __construct(ContainerInterface $dic)
+    public function __construct(CLImate $climate, LoggerInterface $logger, SymfonyStyle $io)
     {
         parent::__construct();
 
-        $this->dic = $dic;
-        $this->climate = $dic->get(CLImate::class);
-        $this->logger = $dic->get(LoggerInterface::class);
-        $this->io = new SymfonyStyle($dic->get(InputInterface::class), $dic->get(OutputInterface::class));
+        $this->climate = $climate;
+        $this->logger = $logger;
+        $this->io = $io;
 
         $this->addOption('xmlpath',
             null,

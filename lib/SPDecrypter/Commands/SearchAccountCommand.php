@@ -26,6 +26,8 @@ namespace SPDecrypter\Commands;
 
 use DateTime;
 use Exception;
+use League\CLImate\CLImate;
+use Psr\Log\LoggerInterface;
 use SPDecrypter\Services\XmlReader\XmlParser;
 use SPDecrypter\Services\XmlReader\XmlReader;
 use SPDecrypter\Services\XmlSearch\SearchAdapter;
@@ -34,6 +36,7 @@ use SPDecrypter\Util\Strings;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Style\SymfonyStyle;
 
 /**
  * Class SearchAccountCommand
@@ -42,13 +45,45 @@ use Symfony\Component\Console\Output\OutputInterface;
 final class SearchAccountCommand extends CommandBase
 {
     protected static $defaultName = 'spd:search-account';
+    /**
+     * @var XmlParser
+     */
+    private $xmlParser;
+    /**
+     * @var XmlReader
+     */
+    private $xmlReader;
+    /**
+     * @var XmlSearch
+     */
+    private $xmlSearch;
+    /**
+     * @var SearchAdapter
+     */
+    private $searchAdapter;
+
+    public function __construct(CLImate $climate,
+                                LoggerInterface $logger,
+                                SymfonyStyle $io,
+                                XmlParser $xmlParser,
+                                XmlReader $xmlReader,
+                                XmlSearch $xmlSearch,
+                                SearchAdapter $searchAdapter)
+    {
+        parent::__construct($climate, $logger, $io);
+
+        $this->xmlParser = $xmlParser;
+        $this->xmlReader = $xmlReader;
+        $this->xmlSearch = $xmlSearch;
+        $this->searchAdapter = $searchAdapter;
+    }
 
     protected function configure()
     {
         $this->setDescription('Search for an account.')
             ->setHelp('This command searches for an account with the given name')
             ->addArgument('name',
-                InputArgument::REQUIRED,
+                InputArgument::OPTIONAL,
                 'Account name')
             ->addOption('withCategories',
                 null,
@@ -77,48 +112,64 @@ final class SearchAccountCommand extends CommandBase
                 $masterPassword = $this->io->ask('Master password');
             }
 
-            $parser = $this->dic->get(XmlParser::class);
-            $parser->initialize(
+            $this->xmlParser->initialize(
                 $input->getOption('xmlpath'),
-                $this->dic->get(XmlReader::class),
+                $this->xmlReader,
                 $password,
                 $input->getOption('signature')
             );
 
-            $adapter = $this->dic->get(SearchAdapter::class);
-            $adapter->setWithCategories(Strings::boolval($input->getOption('withCategories')));
-            $adapter->setWithTags(Strings::boolval($input->getOption('withTags')));
-            $adapter->setTruncate(!Strings::boolval($input->getOption('wide')));
+            $this->searchAdapter->setWithCategories(Strings::boolval($input->getOption('withCategories')));
+            $this->searchAdapter->setWithTags(Strings::boolval($input->getOption('withTags')));
+            $this->searchAdapter->setTruncate(!Strings::boolval($input->getOption('wide')));
 
-            $search = $this->dic->get(XmlSearch::class);
-            $search->setPassword($masterPassword);
+            $this->xmlSearch->setPassword($masterPassword);
 
-            $accounts = $search->searchByName($input->getArgument('name'), $adapter);
+            $name = $input->getArgument('name');
 
-            $xmlDate = DateTime::createFromFormat('U', $parser->getXmlDate());
+            if (empty($name)) {
+                $accounts = $this->xmlSearch->searchAll($this->searchAdapter);
+            } else {
+                $accounts = $this->xmlSearch->searchByName($input->getArgument('name'), $this->searchAdapter);
+            }
+
+            $numAccounts = count($accounts);
+
+            $xmlDate = DateTime::createFromFormat('U', $this->xmlParser->getXmlDate());
 
             $output->writeln([
                 '====',
-                sprintf('<info>XML file sysPass version: %s</info>', $parser->getXmlVersion()),
-                sprintf('<info>XML file date: %s</info>', $xmlDate->format('c')),
+                sprintf('<info>XML file sysPass version: %s</info>',
+                    $this->xmlParser->getXmlVersion()),
+                sprintf('<info>XML file date: %s</info>',
+                    $xmlDate->format('c')),
                 '====',
-                sprintf('<info>Include categories: %s</info>', $adapter->isWithCategories() ? 'yes' : 'no'),
-                sprintf('<info>Include tags: %s</info>', $adapter->isWithTags() ? 'yes' : 'no'),
-                sprintf('<info>Wide output: %s</info>', $adapter->isTruncate() ? 'no' : 'yes'),
+                sprintf('<info>Include categories: %s</info>',
+                    $this->searchAdapter->isWithCategories() ? 'yes' : 'no'),
+                sprintf('<info>Include tags: %s</info>',
+                    $this->searchAdapter->isWithTags() ? 'yes' : 'no'),
+                sprintf('<info>Wide output: %s</info>',
+                    $this->searchAdapter->isTruncate() ? 'no' : 'yes'),
                 '====',
             ]);
 
-            $this->io->title(sprintf('List of Accounts for name: "%s"', $input->getArgument('name')));
+            if (empty($name)) {
+                $this->io->title(sprintf('List of Accounts for name: "%s"', $input->getArgument('name')));
+            } else {
+                $this->io->title('List of Accounts');
+            }
 
-            $this->climate->table($accounts);
+            if ($numAccounts > 0) {
+                $this->climate->table($accounts);
+            }
 
-            $this->io->success(sprintf('Total items: %d', count($accounts)));
+            $this->io->success(sprintf('Total items: %d', $numAccounts));
 
             if (empty($masterPassword)) {
                 $this->io->note('Passwords not decrypted because master password wasn\'t set');
             }
 
-            if ($adapter->isTruncate()) {
+            if ($this->searchAdapter->isTruncate()) {
                 $this->io->note('Truncated output for text fields');
             }
         } catch (Exception $e) {
