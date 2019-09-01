@@ -98,6 +98,9 @@ final class XmlParser extends ServiceBase
             }
 
             $this->processEncrypted($password);
+
+            // Validate the schema again after decryption
+            XmlChecker::validateSchema($this->document);
         }
 
         $this->initialized = true;
@@ -127,7 +130,7 @@ final class XmlParser extends ServiceBase
 
         $this->logger->info('Processing encrypted data');
 
-        $dataNodes = $this->document->getElementsByTagName('Data');
+        $dataNodes = $this->xpath->query('/Root/Encrypted/Data');
 
         $version = $this->xpath->query('/Root/Meta/Version')->item(0)->nodeValue;
 
@@ -135,12 +138,13 @@ final class XmlParser extends ServiceBase
 
         foreach ($dataNodes as $node) {
             /** @var $node DOMElement */
-
             $data = $decode ? base64_decode($node->nodeValue) : $node->nodeValue;
 
             try {
                 $xmlDecrypted = Crypt::decrypt($data, $node->getAttribute('key'), $password);
             } catch (CryptoException $e) {
+                $this->logger->error($e->getMessage());
+
                 throw new XmlParserError('Error decrypting XML data');
             }
 

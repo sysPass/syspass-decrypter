@@ -26,6 +26,7 @@ namespace SPDecrypter\Services\XmlSearch;
 
 use Defuse\Crypto\Exception\CryptoException;
 use DOMElement;
+use DOMNode;
 use DOMNodeList;
 use SPDecrypter\Services\XmlNode\NodeAdapter;
 use SPDecrypter\Services\XmlNode\QueryNode;
@@ -132,9 +133,11 @@ final class SearchAdapter implements SearchAdapterInterface
                             if ($this->withTags && $accountNode->childNodes->length > 0) {
                                 $accountTags = [];
 
-                                /** @var DOMElement $tagNode */
+                                /** @var DOMNode $tagNode */
                                 foreach ($accountNode->childNodes as $tagNode) {
-                                    $accountTags[] = $tags[(int)$tagNode->getAttribute('id')];
+                                    if ($tagNode->nodeType === XML_ELEMENT_NODE) {
+                                        $accountTags[] = $tags[(int)$tagNode->getAttribute('id')];
+                                    }
                                 }
 
                                 $account['tags'] = $this->getValueString(implode(',', $accountTags));

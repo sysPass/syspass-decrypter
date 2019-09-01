@@ -26,36 +26,34 @@
 namespace Tests;
 
 use Defuse\Crypto\Exception\CryptoException;
-use DOMDocument;
-use DOMElement;
-use DOMXPath;
+use Defuse\Crypto\Exception\EnvironmentIsBrokenException;
+use Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException;
 use Exception;
 use Faker\Factory;
 use Faker\Generator;
+use SPDecrypter\Storage\FileException;
+use SPDecrypter\Storage\FileHandler;
 use SPDecrypter\Util\Crypt;
 use SPDecrypter\Util\Hash;
+use XMLWriter;
 
 final class XmlBuilder
 {
     const MASTER_PASSWORD = '12345678900';
-    const XML_VERSION = '3000.0';
+    const XML_VERSION = '320.0';
     const XML_PASSWORD = 'syspass';
     const SEED_COUNT = 1000;
 
     /**
-     * @var DOMDocument
+     * @var XMLWriter
      */
     private $xml;
-    /**
-     * @var DOMElement
-     */
-    private $root;
     /**
      * @var  Generator
      */
     private $faker;
     /**
-     * @var string
+     * @var FileHandler
      */
     private $file;
     /**
@@ -72,11 +70,10 @@ final class XmlBuilder
     public function __construct(string $file, bool $encrypt = false)
     {
         $this->faker = Factory::create();
-        $this->file = $file;
+        $this->file = new FileHandler($file);
         $this->encrypt = $encrypt;
     }
-
-
+    
     /**
      * @throws CryptoException
      * @throws Exception
@@ -91,187 +88,228 @@ final class XmlBuilder
         $this->writeXML();
     }
 
+    /**
+     * @throws FileException
+     */
     private function createDocument()
     {
-        $this->xml = new DOMDocument('1.0', 'UTF-8');
-        $this->root = $this->xml->appendChild($this->xml->createElement('Root'));
+        $this->xml = new XMLWriter();
+        $this->xml->openMemory();
+        $this->xml->setIndent(true);
+        $this->xml->startDocument('1.0', 'UTF-8');
+        $this->xml->startElement('Root');
 
-        $nodeMeta = $this->xml->createElement('Meta');
-        $metaGenerator = $this->xml->createElement('Generator', 'sysPass');
-        $metaVersion = $this->xml->createElement('Version', self::XML_VERSION);
-        $metaTime = $this->xml->createElement('Time', time());
-        $metaUser = $this->xml->createElement('User', 'TestUser');
-        $metaUser->setAttribute('id', 1);
-        $metaGroup = $this->xml->createElement('Group', 'TestGroup');
-        $metaGroup->setAttribute('id', 1);
+        $this->xml->startElement('Meta');
 
-        $nodeMeta->appendChild($metaGenerator);
-        $nodeMeta->appendChild($metaVersion);
-        $nodeMeta->appendChild($metaTime);
-        $nodeMeta->appendChild($metaUser);
-        $nodeMeta->appendChild($metaGroup);
+        $time = time();
 
-        $this->root->appendChild($nodeMeta);
+        $this->xml->writeElement('Generator', 'sysPass');
+        $this->xml->writeElement('Version', self::XML_VERSION);
+        $this->xml->writeElement('Time', $time);
+
+        $this->xml->startElement('User');
+        $this->xml->writeAttribute('id', 1);
+        $this->xml->text('TestUser');
+        $this->xml->endElement();
+
+        $this->xml->startElement('Group');
+        $this->xml->writeAttribute('id', 1);
+        $this->xml->text('TestGroup');
+        $this->xml->endElement();
+
+        $hash = sha1($time . self::XML_VERSION);
+
+        $this->xml->startElement('Hash');
+        $this->xml->writeAttribute('sign', Hash::signMessage($hash, self::XML_PASSWORD));
+        $this->xml->text($hash);
+        $this->xml->endElement();
+
+        // Meta
+        $this->xml->endElement();
+
+        if ($this->encrypt) {
+            $this->xml->writeRaw(sprintf('<Encrypted hash="%s">', Hash::hashKey(self::XML_PASSWORD)));
+        }
+
+        $this->flush();
+    }
+
+    /**
+     * @throws FileException
+     */
+    private function flush()
+    {
+        $this->file->write($this->xml->outputMemory());
     }
 
     /**
      * @throws CryptoException
+     * @throws EnvironmentIsBrokenException
+     * @throws FileException
+     * @throws WrongKeyOrModifiedCiphertextException
      */
     private function createCategories()
     {
-        $node = $this->xml->createElement('Categories');
+        $this->xml->startElement('Categories');
 
         for ($i = 1; $i <= self::SEED_COUNT; $i++) {
-            $name = $this->xml->createElement('name', $this->faker->city);
-            $description = $this->xml->createElement('description', $this->faker->sentence);
+            $this->xml->startElement('Category');
+            $this->xml->writeAttribute('id', $i);
+            $this->xml->writeElement('name', $this->faker->city);
+            $this->xml->writeElement('description', $this->faker->sentence);
+            $this->xml->endElement();
 
-            $nodeChild = $this->xml->createElement('Category');
-            $nodeChild->setAttribute('id', $i);
-            $nodeChild->appendChild($name);
-            $nodeChild->appendChild($description);
-
-            $node->appendChild($nodeChild);
+            if (0 === $i % 500 && !$this->encrypt) {
+                $this->flush();
+            }
         }
+
+        // <Categories>
+        $this->xml->endElement();
 
         if ($this->encrypt) {
-            $this->root->appendChild($this->encryptNode($node));
+            $this->encryptNode();
         } else {
-            $this->root->appendChild($node);
+            $this->flush();
         }
     }
 
     /**
-     * @param DOMElement $node
-     *
-     * @return DOMElement
+     * @return void
      * @throws CryptoException
+     * @throws EnvironmentIsBrokenException
+     * @throws FileException
+     * @throws WrongKeyOrModifiedCiphertextException
      */
-    private function encryptNode(DOMElement $node): DOMElement
+    private function encryptNode()
     {
-        $nodeXML = $this->xml->saveXML($node);
-
         $securedKey = Crypt::makeSecuredKey(self::XML_PASSWORD, false);
-        $encrypted = Crypt::encrypt($nodeXML, $securedKey->unlockKey(self::XML_PASSWORD));
+        $encrypted = Crypt::encrypt($this->xml->outputMemory(), $securedKey->unlockKey(self::XML_PASSWORD));
 
-        $encryptedData = $this->xml->createElement('Data', base64_encode($encrypted));
+        $this->xml->startElement('Data');
+        $this->xml->writeAttribute('key', $securedKey->saveToAsciiSafeString());
+        $this->xml->text($encrypted);
+        $this->xml->endElement();
 
-        $encryptedDataKey = $this->xml->createAttribute('key');
-        $encryptedDataKey->value = $securedKey->saveToAsciiSafeString();
-
-        $encryptedData->appendChild($encryptedDataKey);
-
-        $encryptedNode = $this->root->getElementsByTagName('Encrypted');
-
-        if ($encryptedNode->length === 0) {
-            $newNode = $this->xml->createElement('Encrypted');
-            $newNode->setAttribute('hash', Hash::hashKey(self::XML_PASSWORD));
-            $newNode->appendChild($encryptedData);
-        } else {
-            $newNode = $encryptedNode->item(0);
-            $newNode->appendChild($encryptedData);
-        }
-
-        return $newNode;
+        $this->flush();
     }
 
     /**
      * @throws CryptoException
+     * @throws EnvironmentIsBrokenException
+     * @throws FileException
+     * @throws WrongKeyOrModifiedCiphertextException
      */
     private function createClients()
     {
-        $node = $this->xml->createElement('Clients');
+        $this->xml->startElement('Clients');
 
         for ($i = 1; $i <= self::SEED_COUNT; $i++) {
-            $name = $this->xml->createElement('name', $this->faker->company);
-            $description = $this->xml->createElement('description', $this->faker->sentence);
+            $this->xml->startElement('Client');
+            $this->xml->writeAttribute('id', $i);
+            $this->xml->writeElement('name', $this->faker->company);
+            $this->xml->writeElement('description', $this->faker->sentence);
+            $this->xml->endElement();
 
-            $nodeChild = $this->xml->createElement('Client');
-            $nodeChild->setAttribute('id', $i);
-            $nodeChild->appendChild($name);
-            $nodeChild->appendChild($description);
-
-            $node->appendChild($nodeChild);
+            if (0 === $i % 500 && !$this->encrypt) {
+                $this->flush();
+            }
         }
 
+        // <Clients>
+        $this->xml->endElement();
+
         if ($this->encrypt) {
-            $this->root->appendChild($this->encryptNode($node));
+            $this->encryptNode();
         } else {
-            $this->root->appendChild($node);
+            $this->flush();
         }
     }
 
     /**
      * @throws CryptoException
+     * @throws EnvironmentIsBrokenException
+     * @throws FileException
+     * @throws WrongKeyOrModifiedCiphertextException
      */
     private function createTags()
     {
-        $node = $this->xml->createElement('Tags');
+        $this->xml->startElement('Tags');
 
         for ($i = 1; $i <= self::SEED_COUNT; $i++) {
-            $name = $this->xml->createElement('name', $this->faker->colorName);
+            $this->xml->startElement('Tag');
+            $this->xml->writeAttribute('id', $i);
+            $this->xml->writeElement('name', $this->faker->colorName);
+            $this->xml->endElement();
 
-            $nodeChild = $this->xml->createElement('Tag');
-            $nodeChild->setAttribute('id', $i);
-            $nodeChild->appendChild($name);
-
-            $node->appendChild($nodeChild);
+            if (0 === $i % 500 && !$this->encrypt) {
+                $this->flush();
+            }
         }
 
+        // <Tags>
+        $this->xml->endElement();
+
         if ($this->encrypt) {
-            $this->root->appendChild($this->encryptNode($node));
+            $this->encryptNode();
         } else {
-            $this->root->appendChild($node);
+            $this->flush();
         }
     }
 
     /**
      * @throws CryptoException
+     * @throws EnvironmentIsBrokenException
+     * @throws FileException
+     * @throws WrongKeyOrModifiedCiphertextException
      */
     private function createAccounts()
     {
-        $node = $this->xml->createElement('Accounts');
+        $secureKey = Crypt::makeSecuredKey(self::MASTER_PASSWORD, false);
+        $key = $secureKey->unlockKey(self::MASTER_PASSWORD);
+
+        $this->xml->startElement('Accounts');
 
         for ($i = 1; $i <= self::SEED_COUNT * 10; $i++) {
-            $name = $this->xml->createElement('name', $this->faker->name);
-            $clientId = $this->xml->createElement('clientId', mt_rand(1, self::SEED_COUNT));
-            $categoryId = $this->xml->createElement('categoryId', mt_rand(1, self::SEED_COUNT));
-            $login = $this->xml->createElement('login', $this->faker->userName);
-            $url = $this->xml->createElement('url', $this->faker->url);
-            $notes = $this->xml->createElement('notes', $this->faker->text);
+            $this->xml->startElement('Account');
+            $this->xml->writeAttribute('id', $i);
+            $this->xml->writeElement('name', $this->faker->name);
+            $this->xml->writeElement('clientId', mt_rand(1, self::SEED_COUNT));
+            $this->xml->writeElement('categoryId', mt_rand(1, self::SEED_COUNT));
+            $this->xml->writeElement('login', $this->faker->userName);
+            $this->xml->writeElement('url', $this->faker->url);
+            $this->xml->writeElement('notes', $this->faker->text);
 
-            $secureKey = Crypt::makeSecuredKey(self::MASTER_PASSWORD, false);
-            $encryptedPass = Crypt::encrypt($this->faker->password, $secureKey->unlockKey(self::MASTER_PASSWORD));
+            $this->xml->writeElement('pass',
+                Crypt::encrypt($this->faker->password, $key));
+            $this->xml->writeElement('key', $secureKey->saveToAsciiSafeString());
 
-            $pass = $this->xml->createElement('pass', $encryptedPass);
-            $key = $this->xml->createElement('key', $secureKey->saveToAsciiSafeString());
-            $tags = $this->xml->createElement('tags');
+            $this->xml->startElement('tags');
 
             for ($j = 1; $j <= mt_rand(1, self::SEED_COUNT / 10); $j++) {
-                $tag = $this->xml->createElement('tag');
-                $tag->setAttribute('id', mt_rand(1, self::SEED_COUNT));
-
-                $tags->appendChild($tag);
+                $this->xml->startElement('tag');
+                $this->xml->writeAttribute('id', mt_rand(1, self::SEED_COUNT));
+                $this->xml->endElement();
             }
 
-            $nodeChild = $this->xml->createElement('Account');
-            $nodeChild->setAttribute('id', $i);
-            $nodeChild->appendChild($name);
-            $nodeChild->appendChild($clientId);
-            $nodeChild->appendChild($categoryId);
-            $nodeChild->appendChild($login);
-            $nodeChild->appendChild($url);
-            $nodeChild->appendChild($notes);
-            $nodeChild->appendChild($pass);
-            $nodeChild->appendChild($key);
-            $nodeChild->appendChild($tags);
+            // <tags>
+            $this->xml->endElement();
 
-            $node->appendChild($nodeChild);
+            // <Account>
+            $this->xml->endElement();
+
+            if (0 === $i % 500 && !$this->encrypt) {
+                $this->flush();
+            }
         }
 
+        // <Accounts>
+        $this->xml->endElement();
+
         if ($this->encrypt) {
-            $this->root->appendChild($this->encryptNode($node));
+            $this->encryptNode();
         } else {
-            $this->root->appendChild($node);
+            $this->flush();
         }
     }
 
@@ -280,34 +318,15 @@ final class XmlBuilder
      */
     private function writeXML()
     {
-        $this->createHash();
-
-        $this->xml->formatOutput = true;
-        $this->xml->preserveWhiteSpace = false;
-
-        if (!$this->xml->save($this->file)) {
-            throw new Exception('Error while creating the XML file');
-        }
-    }
-
-    private function createHash()
-    {
-        $data = '';
-
-        foreach ((new DOMXPath($this->xml))->query('/Root/*[not(self::Meta)]') as $node) {
-            $data .= $this->xml->saveXML($node);
+        if ($this->encrypt) {
+            $this->xml->writeRaw('</Encrypted>');
         }
 
-        $hash = sha1($data);
+        // <Root>
+        $this->xml->endElement();
 
-        $hashNode = $this->xml->createElement('Hash', $hash);
-        $hashNode->appendChild($this->xml->createAttribute('sign'));
+        $this->flush();
 
-        $hashNode->setAttribute('sign', Hash::signMessage($hash, self::XML_PASSWORD));
-
-        $this->root
-            ->getElementsByTagName('Meta')
-            ->item(0)
-            ->appendChild($hashNode);
+        $this->file->close();
     }
 }
