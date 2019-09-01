@@ -14,12 +14,8 @@
         </testsuite>
     </testsuites>
     <filter>
-        <whitelist processUncoveredFilesFromWhitelist="true">
+        <whitelist>
             <directory suffix=".php">../lib/SPDecrypter</directory>
-            <exclude>
-                <file>../lib/SPDecrypter/definitions.php</file>
-                <file>../lib/SPDecrypter/bootstrap.php</file>
-            </exclude>
         </whitelist>
     </filter>
     <logging>
