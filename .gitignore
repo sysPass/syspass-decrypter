@@ -3,7 +3,6 @@
 vendor/*
 doc/*
 build/*
-*.xml
 
 .phpstorm.meta.php
 composer.phar
