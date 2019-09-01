@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/sysPass/syspass-decrypter.svg?branch=master)](https://travis-ci.org/sysPass/syspass-decrypter) [![Maintainability](https://api.codeclimate.com/v1/badges/cf5226d1b832e09a1a91/maintainability)](https://codeclimate.com/github/sysPass/syspass-decrypter/maintainability) [![Test Coverage](https://api.codeclimate.com/v1/badges/cf5226d1b832e09a1a91/test_coverage)](https://codeclimate.com/github/sysPass/syspass-decrypter/test_coverage)
+
+
 ## sysPass Decrypter
 
 **Current status: BETA**

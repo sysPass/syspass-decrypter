@@ -13,6 +13,15 @@
             <directory suffix=".php">./SPDecrypter</directory>
         </testsuite>
     </testsuites>
+    <filter>
+        <whitelist processUncoveredFilesFromWhitelist="true">
+            <directory suffix=".php">../lib/SPDecrypter</directory>
+            <exclude>
+                <file>../lib/SPDecrypter/definitions.php</file>
+                <file>../lib/SPDecrypter/bootstrap.php</file>
+            </exclude>
+        </whitelist>
+    </filter>
     <logging>
         <log type="coverage-clover" target="./_output/coverage-clover.xml"/>
         <log type="coverage-text" target="php://stdout" showUncoveredFiles="true" showOnlySummary="true" />
