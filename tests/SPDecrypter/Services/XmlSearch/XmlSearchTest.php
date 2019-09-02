@@ -41,7 +41,7 @@ class XmlSearchTest extends TestCase
 
         $result = $this->xmlSearch->searchByName('Citlalli');
 
-        $this->assertEquals(5, $result->length);
+        $this->assertEquals(1, $result->length);
     }
 
     /**
@@ -55,7 +55,7 @@ class XmlSearchTest extends TestCase
 
         $result = $this->xmlSearch->searchByName('Citlalli', $adapter);
 
-        $this->assertCount(5, $result);
+        $this->assertCount(1, $result);
 
         $this->checkAdapter(self::STANDARD_KEYS, $result[0]);
 
@@ -90,7 +90,7 @@ class XmlSearchTest extends TestCase
 
         $result = $this->xmlSearch->searchByName('Citlalli', $adapter);
 
-        $this->assertCount(5, $result);
+        $this->assertCount(1, $result);
 
         $this->checkAdapter(array_merge(self::STANDARD_KEYS, self::EXTENDED_KEYS), $result[0]);
 
@@ -110,7 +110,7 @@ class XmlSearchTest extends TestCase
 
         $result = $this->xmlSearch->searchByName('Citlalli', $adapter);
 
-        $this->assertCount(5, $result);
+        $this->assertCount(1, $result);
 
         $this->checkAdapter(self::STANDARD_KEYS, $result[0]);
 
@@ -126,7 +126,7 @@ class XmlSearchTest extends TestCase
     {
         $result = $this->xmlSearch->searchAll();
 
-        $this->assertEquals(10000, $result->length);
+        $this->assertEquals(1000, $result->length);
     }
 
     /**
@@ -140,7 +140,7 @@ class XmlSearchTest extends TestCase
 
         $result = $this->xmlSearch->searchAll($adapter);
 
-        $this->assertCount(10000, $result);
+        $this->assertCount(1000, $result);
 
         $this->checkAdapter(self::STANDARD_KEYS, $result[0]);
 
@@ -164,7 +164,7 @@ class XmlSearchTest extends TestCase
 
         $result = $this->xmlSearch->searchAll($adapter);
 
-        $this->assertCount(10000, $result);
+        $this->assertCount(1000, $result);
 
         $this->checkAdapter(array_merge(self::STANDARD_KEYS, self::EXTENDED_KEYS), $result[0]);
 

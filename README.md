@@ -21,16 +21,28 @@ You can simply download a pre-compiled and ready-to-use version as a Phar to any
 
 [Latest release](https://github.com/syspass/syspass-decrypter/releases/latest)
 
-You can now verify everything works by running this:
-
-```bash
-$ php syspass-decrypter.phar --version
-```
-
 #### Using Composer
 
 **TODO**
 
 ### Usage
 
-`php cli.php spd:search-account "account_name"`   
+#### Global Options
+
+* `--xmlpath` Set the XML file path
+* `--password` Set the password for the encrypted XML (it will be asked if not set)
+* `--masterPassword` Set the master password for decrypting the accounts' password (it will be asked if not set)
+* `--wide=[yes|no]` Do not truncate text fields
+* `--help` Commands help
+
+#### Search Account
+
++ `spd:search-account [name]` Search for an account with the given name. If `[name]` is omitted it will list all the accounts
+* `--withCategories=[yes|no]` Include the category column for each result
+* `--withTags=[yes|no]` Include the tags column for each result
+
+##### Examples
+
+`syspass-decrypter.phar spd:search-account "GitHub" --xmlpath ./syspass.xml --withCategories=yes --wide`
+
+`syspass-decrypter.phar spd:search-account --xmlpath ./syspass.xml`

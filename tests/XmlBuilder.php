@@ -42,7 +42,7 @@ final class XmlBuilder
     const MASTER_PASSWORD = '12345678900';
     const XML_VERSION = '320.0';
     const XML_PASSWORD = 'syspass';
-    const SEED_COUNT = 1000;
+    const SEED_COUNT = 100;
 
     /**
      * @var XMLWriter
