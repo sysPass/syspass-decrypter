@@ -22,7 +22,7 @@
  *  along with syspass-decrypter.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-define('APP_VERSION', [0, 1, 0, 19082401]);
+define('APP_VERSION', [0, 1, 1, 19090201]);
 define('XML_MIN_VERSION', [3, 0, 0, 0]);
 define('DS', DIRECTORY_SEPARATOR);
 define('XML_SCHEMA', APP_BASE_DIR . DS . 'schemas' . DS . 'syspass.xsd');
@@ -31,6 +31,7 @@ require APP_BASE_DIR . DS . 'vendor' . DS . 'autoload.php';
 
 use DI\ContainerBuilder;
 use SPDecrypter\Commands\SearchAccountCommand;
+use SPDecrypter\Util\Version;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -41,6 +42,8 @@ try {
     $dic = $builder->build();
 
     $app = new Application();
+    $app->setName('sysPass Decrypter');
+    $app->setVersion(Version::getVersionString());
     $app->add($dic->get(SearchAccountCommand::class));
     $app->run($dic->get(InputInterface::class), $dic->get(OutputInterface::class));
 } catch (Exception $e) {

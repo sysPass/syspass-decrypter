@@ -31,6 +31,11 @@ namespace SPDecrypter\Util;
  */
 final class Version
 {
+    public static function getVersionString()
+    {
+        return sprintf('%s-%d', implode('.', array_slice(APP_VERSION, 0, 3)), APP_VERSION[3]);
+    }
+
     /**
      * Compare versions
      *
