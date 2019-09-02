@@ -1,7 +1,9 @@
 {
   "alias": "syspass-decrypter.phar",
-  "chmod": "0755",
-  "directories": ["lib", "schemas"],
+  "directories": [
+    "lib",
+    "schemas"
+  ],
   "files": [
     "COPYING",
     "README.md",
@@ -10,12 +12,22 @@
   "finder": [
     {
       "name": "*.php",
-      "exclude": ["tests"],
+      "exclude": [
+        "doc",
+        "test",
+        "Test",
+        "test_old",
+        "tests",
+        "Tests",
+        "vendor-bin"
+      ],
       "in": "vendor"
     }
   ],
+  "blacklist": [
+    "fzaninotto"
+  ],
   "git-version": "package_version",
   "main": "cli.php",
-  "output": "syspass-decrypter.phar",
-  "stub": true
+  "output": "build/syspass-decrypter.phar"
 }
