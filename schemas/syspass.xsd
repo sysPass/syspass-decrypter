@@ -81,7 +81,7 @@
     <xs:element name="Categories">
         <xs:complexType>
             <xs:sequence>
-                <xs:element maxOccurs="unbounded" minOccurs="0" ref="Category"/>
+                <xs:element minOccurs="0" maxOccurs="unbounded" ref="Category"/>
             </xs:sequence>
         </xs:complexType>
     </xs:element>
@@ -97,7 +97,7 @@
     <xs:element name="Tags">
         <xs:complexType>
             <xs:sequence>
-                <xs:element maxOccurs="unbounded" ref="Tag"/>
+                <xs:element minOccurs="0" maxOccurs="unbounded" ref="Tag"/>
             </xs:sequence>
         </xs:complexType>
     </xs:element>
@@ -122,7 +122,7 @@
                 <xs:element name="name" type="NonEmptyString"/>
                 <xs:element name="clientId" type="NonEmptyInteger"/>
                 <xs:element name="categoryId" type="NonEmptyInteger"/>
-                <xs:element name="login" type="NonEmptyString"/>
+                <xs:element name="login" type="xs:string"/>
                 <xs:element name="url" type="xs:string"/>
                 <xs:element name="notes" type="xs:string"/>
                 <xs:element name="pass" type="NonEmptyString"/>

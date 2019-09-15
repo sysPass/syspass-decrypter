@@ -22,7 +22,7 @@
  *  along with syspass-decrypter.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-define('APP_VERSION', [0, 1, 1, 19090201]);
+define('APP_VERSION', [0, 1, 2, 19091501]);
 define('XML_MIN_VERSION', [3, 0, 0, 0]);
 define('DS', DIRECTORY_SEPARATOR);
 define('XML_SCHEMA', APP_BASE_DIR . DS . 'schemas' . DS . 'syspass.xsd');
