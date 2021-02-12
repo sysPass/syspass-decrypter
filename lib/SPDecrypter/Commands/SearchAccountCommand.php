@@ -35,8 +35,10 @@ use SPDecrypter\Services\XmlSearch\XmlSearch;
 use SPDecrypter\Util\Strings;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Component\Filesystem\Filesystem;
 
 /**
  * Class SearchAccountCommand
@@ -94,7 +96,12 @@ final class SearchAccountCommand extends CommandBase
                 null,
                 InputArgument::OPTIONAL,
                 'Display tag on search results',
-                false);
+                false)
+            ->addOption('export',
+                null,
+                InputOption::VALUE_NONE,
+                'Export results to JSON and CSV files to the root files')
+        ;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -161,6 +168,10 @@ final class SearchAccountCommand extends CommandBase
 
             if ($numAccounts > 0) {
                 $this->climate->table($accounts);
+
+                if ($input->getOption('export')) {
+                    $this->exportToFiles($accounts);
+                }
             }
 
             $this->io->success(sprintf('Total items: %d', $numAccounts));
@@ -175,6 +186,19 @@ final class SearchAccountCommand extends CommandBase
         } catch (Exception $e) {
             $this->logger->error($e->getTraceAsString());
             $this->logger->error($e->getMessage());
+        }
+    }
+
+    private function exportToFiles($accounts)
+    {
+        // export JSON
+        $fs = new Filesystem();
+        $fs->dumpFile('./export.json', json_encode($accounts));
+
+        // export CSV
+        $fp = fopen('./export.csv', 'w');
+        foreach ($accounts as $account) {
+            fputcsv($fp, $account);
         }
     }
 }

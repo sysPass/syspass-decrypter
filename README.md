@@ -30,6 +30,7 @@ You can simply download a pre-compiled and ready-to-use version as a Phar to any
 #### Global Options
 
 * `--xmlpath` Set the XML file path
+* `--export` export to JSON and CSV to the root path
 * `--password` Set the password for the encrypted XML (it will be asked if not set)
 * `--masterPassword` Set the master password for decrypting the accounts' password (it will be asked if not set)
 * `--wide=[yes|no]` Do not truncate text fields
@@ -46,3 +47,5 @@ You can simply download a pre-compiled and ready-to-use version as a Phar to any
 `syspass-decrypter.phar spd:search-account "GitHub" --xmlpath ./syspass.xml --withCategories=yes --wide`
 
 `syspass-decrypter.phar spd:search-account --xmlpath ./syspass.xml`
+
+`syspass-decrypter.phar spd:search-account --xmlpath ./syspass.xml --export`
